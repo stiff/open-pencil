@@ -73,9 +73,9 @@ export function startServer(options: ServerOptions = {}) {
   // --- WebSocket: browser connects here ---
 
   const wss = new WebSocketServer({ port: wsPort, host: '127.0.0.1' })
-  let unconnected = (msg) => ({ error: true, message: 'Automation not connected' })
+  const unconnected = (_msg: unknown) => ({ error: true, message: 'Automation not connected' })
   let automation = unconnected
-  let queue: Map<string, (response: any) => void> = new Map()
+  const queue: Map<string, (response: unknown) => void> = new Map()
 
   wss.on('connection', (ws) => {
     const token = browserRpc.currentRpcToken()
@@ -101,16 +101,17 @@ export function startServer(options: ServerOptions = {}) {
         }
         handler = (resp) => {
           console.log('Message from automation!', resp)
-          if (resp.type == 'response') {
+          if (resp.type === 'response') {
             queue.get(resp.id)?.(JSON.stringify(resp))
             queue.delete(resp.id)
           } else {
             console.log("Unknown message", resp)
           }
         }
-      } else if (msg.type === 'register') {
-        console.log('Registering browser')
-        handler = (msg) => browserRpc.handleMessage(msg, ws)
+      // TODO is it necessary?
+      // } else if (msg.type === 'registerBrowser') {
+      //   console.log('Registering browser')
+      //   handler = (msg) => browserRpc.handleMessage(msg, ws)
       } else {
         handler(msg)
       }
